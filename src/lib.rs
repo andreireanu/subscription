@@ -44,6 +44,7 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
                 .contract_proxy(self.netflix().get())
                 .tokens(idx)
                 .execute_on_dest_context();
+            self.id(&token).set(idx);
             self.tokens(&idx).set(token);
         }
         let services_count: usize = self
@@ -74,8 +75,8 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
     #[endpoint(depositToken)]
     fn deposit_token(&self, supply: BigUint, token: TokenIdentifier) {
         let payment = self.call_value().single_esdt();
-        let id = self.get_token_id(&payment.token_identifier);
-        require!(id > 0, "Token not whitelisted for payment.");
+        let id = self.id(&payment.token_identifier);
+        require!(!id.is_empty(), "Token not whitelisted for payment.");
         require!(
             &payment.token_identifier == &token,
             "Incorrect parameters for function call. Payment token other than deposited one."
@@ -84,12 +85,35 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
             &payment.amount == &supply,
             "Incorrect parameters for function call. Payment amount other than deposited one."
         );
-
+        let id = id.get();
         let caller = self.blockchain().get_caller();
         let balance_option = self.balance(&caller).get(&id);
         match balance_option {
             Some(balance) => self.balance(&caller).insert(id, balance + supply),
             None => self.balance(&caller).insert(id, supply),
         };
+    }
+
+    #[endpoint(withdrawToken)]
+    fn withdraw_token(&self, supply: BigUint, token: TokenIdentifier) {
+        // Check if withdraw call valid
+        let id = self.id(&token);
+        require!(!id.is_empty(), "Token non existent in Smart Contract");
+        let id = id.get();
+        let caller = self.blockchain().get_caller();
+        require!(
+            self.balance(&caller).contains_key(&id),
+            "The caller has no balance for this token"
+        );
+        let mut balance = self.balance(&caller).get(&id).unwrap();
+        require!(balance >= supply, "Token balance lower than requested one");
+
+        let _ = self.send().direct_esdt(&caller, &token, 0u64, &supply);
+        balance -= supply;
+        if balance == 0 {
+            self.balance(&caller).remove(&id);
+        } else {
+            self.balance(&caller).insert(id, balance);
+        }
     }
 }

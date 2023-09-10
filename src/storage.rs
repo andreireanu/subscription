@@ -27,6 +27,11 @@ pub trait StorageModule {
     #[storage_mapper("tokens")]
     fn tokens(&self, id: &usize) -> SingleValueMapper<TokenIdentifier>;
 
+    // Token Ids
+    #[view(getIds)]
+    #[storage_mapper("id")]
+    fn id(&self, token: &TokenIdentifier) -> SingleValueMapper<usize>;
+
     // Number of Services mapper
     #[view(getServicesCount)]
     #[storage_mapper("services_count")]

@@ -49,6 +49,44 @@ upgrade() {
 
 ########
 
+DEPOSIT_FUNCTION=depositToken
+DEPOSIT_TOKEN=AMS-3a6740
+DEPOSIT_SUPPLY=10
+DEPOSIT_TOKEN_DUMMY=BND2-90614b
+DEPOSIT_SUPPLY_DUMMY=2
+ 
+depositToken() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="erc1155/wallets/alice.pem" \
+    --gas-limit=100000000 \
+    --function="ESDTTransfer" \
+    --arguments "str:"${DEPOSIT_TOKEN} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_TOKEN}
+} 
+
+WITHDRAW_FUNCTION=withdrawToken
+WITHDRAW_TOKEN=AMS-3a6740
+WITHDRAW_SUPPLY=1
+WITHDRAW_TOKEN_DUMMY=BND2-90614b
+WITHDRAW_SUPPLY_DUMMY=2
+
+withdrawToken() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="erc1155/wallets/alice.pem" \
+    --gas-limit=100000000 \
+    --function="withdrawToken" \
+    --arguments ${WITHDRAW_SUPPLY} "str:"${WITHDRAW_TOKEN}
+}  
+
+########
+
 getTokensCount() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
@@ -84,26 +122,12 @@ getServices() {
     --arguments ${SERVICE_ID} 
 }
 
-########
-
-DEPOSIT_FUNCTION=depositToken
-DEPOSIT_TOKEN=AMS-3a6740
-DEPOSIT_SUPPLY=1
-DEPOSIT_TOKEN_DUMMY=BND2-90614b
-DEPOSIT_SUPPLY_DUMMY=2
- 
-depositToken() {
-    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
-    --send \
+getIds() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
-    --chain=${CHAIN_ID} \
-    --recall-nonce \
-    --pem="erc1155/wallets/alice.pem" \
-    --gas-limit=100000000 \
-    --function="ESDTTransfer" \
-    --arguments "str:"${DEPOSIT_TOKEN} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_TOKEN}
-} 
-
+    --function="getIds" \
+    --arguments "str:"${DEPOSIT_TOKEN} 
+}
 
 getBalance() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
@@ -111,3 +135,4 @@ getBalance() {
     --function="getBalance" \
     --arguments ${ALICE_ADDRESS} 
 }
+
