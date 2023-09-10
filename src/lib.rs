@@ -61,16 +61,6 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         }
     }
 
-    #[inline]
-    fn get_token_id(&self, token: &TokenIdentifier) -> usize {
-        for idx in 0..self.tokens_count().get() {
-            if &self.tokens(&idx).get() == token {
-                return idx;
-            }
-        }
-        0
-    }
-
     #[payable("*")]
     #[endpoint(depositToken)]
     fn deposit_token(&self, supply: BigUint, token: TokenIdentifier) {
@@ -120,7 +110,7 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
     #[inline]
     fn subscribe_to_single_service(&self, service_id: &usize) {
         require!(
-            !service_id > self.services_count().get(),
+            service_id < &self.services_count().get(),
             "Service not found."
         );
         let caller = self.blockchain().get_caller();
@@ -140,6 +130,29 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
     fn subscribe_to_multiple_services(&self, services: MultiValueEncoded<usize>) {
         for service in services {
             self.subscribe_to_single_service(&service);
+        }
+    }
+
+    #[inline]
+    fn unsubscribe_from_single_service(&self, service_id: &usize) {
+        require!(
+            service_id < &self.services_count().get(),
+            "Service not found."
+        );
+        let caller = self.blockchain().get_caller();
+        let service = self.subscription(service_id).get(&caller);
+        match service {
+            Some(_) => self.subscription(service_id).remove(&caller),
+            None => {
+                sc_panic!("Not subscribed to this service.")
+            }
+        };
+    }
+
+    #[endpoint(unsubscribeFromMultipleServices)]
+    fn unsubscribe_from_multiple_services(&self, services: MultiValueEncoded<usize>) {
+        for service in services {
+            self.unsubscribe_from_single_service(&service);
         }
     }
 }

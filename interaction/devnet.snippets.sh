@@ -90,6 +90,7 @@ withdrawToken() {
 SERVICE_1=1
 SERVICE_2=2
 SERVICE_3=3
+SERVICE_4=4
 
 subscribeToMultipleServices() {
     mxpy --verbose contract call ${CONTRACT_ADDRESS} \
@@ -100,11 +101,20 @@ subscribeToMultipleServices() {
     --pem="erc1155/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="subscribeToMultipleServices" \
-    --arguments $SERVICE_2 $SERVICE_3  
+    --arguments $SERVICE_1 $SERVICE_2 $SERVICE_3  
 }  
-## ALICE SUBSCRIBED TO 1 AT ~= 1694378226
-## ALICE SUBSCRIBED TO 2 AT ~= 1694380880
-## ALICE SUBSCRIBED TO 3 AT ~= 1694380880
+
+unsubscribeFromMultipleServices() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="erc1155/wallets/alice.pem" \
+    --gas-limit=100000000 \
+    --function="unsubscribeFromMultipleServices" \
+    --arguments $SERVICE_2 $SERVICE_3   
+}  
 
 getSubscription() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
