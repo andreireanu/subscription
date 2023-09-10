@@ -116,4 +116,30 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
             self.balance(&caller).insert(id, balance);
         }
     }
+
+    #[inline]
+    fn subscribe_to_single_service(&self, service_id: &usize) {
+        require!(
+            !service_id > self.services_count().get(),
+            "Service not found."
+        );
+        let caller = self.blockchain().get_caller();
+        let service = self.subscription(service_id).get(&caller);
+        match service {
+            Some(_) => sc_panic!("Already subscribed to this service."),
+            None => {
+                let timestamp = self.blockchain().get_block_timestamp();
+                let periodicity = self.services(service_id).get().periodicity;
+                self.subscription(service_id)
+                    .insert(caller, timestamp + periodicity);
+            }
+        };
+    }
+
+    #[endpoint(subscribeToMultipleServices)]
+    fn subscribe_to_multiple_services(&self, services: MultiValueEncoded<usize>) {
+        for service in services {
+            self.subscribe_to_single_service(&service);
+        }
+    }
 }

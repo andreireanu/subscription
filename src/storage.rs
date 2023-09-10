@@ -46,4 +46,10 @@ pub trait StorageModule {
     #[view(getBalance)]
     #[storage_mapper("balance")]
     fn balance(&self, address: &ManagedAddress) -> MapMapper<usize, BigUint>;
+
+    // Service Id to Address subscription details mapper
+    // Store (address, datetime for next payment) in map mapper
+    #[view(getSubscription)]
+    #[storage_mapper("subscription")]
+    fn subscription(&self, id: &usize) -> MapMapper<ManagedAddress, u64>;
 }

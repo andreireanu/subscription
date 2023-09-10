@@ -87,6 +87,42 @@ withdrawToken() {
 
 ########
 
+SERVICE_1=1
+SERVICE_2=2
+SERVICE_3=3
+
+subscribeToMultipleServices() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="erc1155/wallets/alice.pem" \
+    --gas-limit=100000000 \
+    --function="subscribeToMultipleServices" \
+    --arguments $SERVICE_2 $SERVICE_3  
+}  
+## ALICE SUBSCRIBED TO 1 AT ~= 1694378226
+## ALICE SUBSCRIBED TO 2 AT ~= 1694380880
+## ALICE SUBSCRIBED TO 3 AT ~= 1694380880
+
+getSubscription() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getSubscription" \
+    --arguments ${SERVICE_1}
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getSubscription" \
+    --arguments ${SERVICE_2}
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getSubscription" \
+    --arguments ${SERVICE_3}    
+} 
+
+########
+
 getTokensCount() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
@@ -112,14 +148,21 @@ getServicesCount() {
     --proxy=${PROXY} \
     --function="getServicesCount"  
 }
-
-SERVICE_ID=2
-
+ 
+ 
 getServices() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getServices" \
-    --arguments ${SERVICE_ID} 
+    --arguments $SERVICE_1 
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getServices" \
+    --arguments $SERVICE_2 
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getServices" \
+    --arguments $SERVICE_3 
 }
 
 getIds() {

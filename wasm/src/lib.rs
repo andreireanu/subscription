@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            9
+// Endpoints:                           11
 // Async Callback (empty):               1
-// Total number of exported functions:  11
+// Total number of exported functions:  13
 
 #![no_std]
 
@@ -24,6 +24,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         init => init
         depositToken => deposit_token
         withdrawToken => withdraw_token
+        subscribeToMultipleServices => subscribe_to_multiple_services
         getNetflix => netflix
         getTokensCount => tokens_count
         getTokens => tokens
@@ -31,6 +32,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getServicesCount => services_count
         getServices => services
         getBalance => balance
+        getSubscription => subscription
     )
 }
 
