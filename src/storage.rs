@@ -36,4 +36,9 @@ pub trait StorageModule {
     #[view(getServices)]
     #[storage_mapper("services")]
     fn services(&self, id: &usize) -> SingleValueMapper<Service>;
+
+    // Address to Balance mapper
+    #[view(getBalance)]
+    #[storage_mapper("balance")]
+    fn balance(&self, address: &ManagedAddress) -> MapMapper<usize, BigUint>;
 }

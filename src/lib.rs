@@ -58,6 +58,38 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
                 .execute_on_dest_context();
             self.services(&idx).set(service);
         }
+    }
 
+    #[inline]
+    fn get_token_id(&self, token: &TokenIdentifier) -> usize {
+        for idx in 0..self.tokens_count().get() {
+            if &self.tokens(&idx).get() == token {
+                return idx;
+            }
+        }
+        0
+    }
+
+    #[payable("*")]
+    #[endpoint(depositToken)]
+    fn deposit_token(&self, supply: BigUint, token: TokenIdentifier) {
+        let payment = self.call_value().single_esdt();
+        let id = self.get_token_id(&payment.token_identifier);
+        require!(id > 0, "Token not whitelisted for payment.");
+        require!(
+            &payment.token_identifier == &token,
+            "Incorrect parameters for function call. Payment token other than deposited one."
+        );
+        require!(
+            &payment.amount == &supply,
+            "Incorrect parameters for function call. Payment amount other than deposited one."
+        );
+
+        let caller = self.blockchain().get_caller();
+        let balance_option = self.balance(&caller).get(&id);
+        match balance_option {
+            Some(balance) => self.balance(&caller).insert(id, balance + supply),
+            None => self.balance(&caller).insert(id, supply),
+        };
     }
 }

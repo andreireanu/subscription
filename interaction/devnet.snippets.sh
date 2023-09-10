@@ -55,13 +55,18 @@ getTokensCount() {
     --function="getTokensCount"  
 } 
 
-TOKEN_ID=2
+TOKEN_1=1
+TOKEN_2=2
 
 getTokens() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getTokens" \
-    --arguments ${TOKEN_ID} 
+    --arguments ${TOKEN_1} 
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getTokens" \
+    --arguments ${TOKEN_2}
 }
 
 getServicesCount() {
@@ -77,4 +82,32 @@ getServices() {
     --proxy=${PROXY} \
     --function="getServices" \
     --arguments ${SERVICE_ID} 
+}
+
+########
+
+DEPOSIT_FUNCTION=depositToken
+DEPOSIT_TOKEN=AMS-3a6740
+DEPOSIT_SUPPLY=1
+DEPOSIT_TOKEN_DUMMY=BND2-90614b
+DEPOSIT_SUPPLY_DUMMY=2
+ 
+depositToken() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="erc1155/wallets/alice.pem" \
+    --gas-limit=100000000 \
+    --function="ESDTTransfer" \
+    --arguments "str:"${DEPOSIT_TOKEN} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_TOKEN}
+} 
+
+
+getBalance() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getBalance" \
+    --arguments ${ALICE_ADDRESS} 
 }
