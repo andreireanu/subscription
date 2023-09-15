@@ -48,9 +48,18 @@ upgrade() {
 
 ########
 
+TOKEN_1=AMS-3a6740
+LP_ADDRESS_TOKEN_1="erd1qqqqqqqqqqqqqpgqfs5vg9n23hvrgfmye4h9vj8p6ljtz2m37wpqj726a5"
+TOKEN_2=BMS-e00535
+LP_ADDRESS_TOKEN_2="erd1qqqqqqqqqqqqqpgqe92zyh296kxrmeszg5cynxcuj4vzckxg7wpqp89fmz"
+TOKEN_3=USDC-79d9a4
+
+
 DEPOSIT_FUNCTION=depositToken
-DEPOSIT_TOKEN=AMS-3a6740
-DEPOSIT_SUPPLY=10
+DEPOSIT_TOKEN_1=AMS-3a6740
+DEPOSIT_SUPPLY_1=20
+DEPOSIT_TOKEN_2=BMS-e00535
+DEPOSIT_SUPPLY_2=10
 DEPOSIT_TOKEN_DUMMY=BND2-90614b
 DEPOSIT_SUPPLY_DUMMY=2
  
@@ -63,12 +72,12 @@ depositToken() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="ESDTTransfer" \
-    --arguments "str:"${DEPOSIT_TOKEN} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_TOKEN}
+    --arguments "str:"${DEPOSIT_TOKEN_2} ${DEPOSIT_SUPPLY_2} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY_2} "str:"${DEPOSIT_TOKEN_2}
 } 
 
 WITHDRAW_FUNCTION=withdrawToken
-WITHDRAW_TOKEN=AMS-3a6740
-WITHDRAW_SUPPLY=1
+WITHDRAW_TOKEN_1=AMS-3a6740
+WITHDRAW_SUPPLY_1=20
 WITHDRAW_TOKEN_DUMMY=BND2-90614b
 WITHDRAW_SUPPLY_DUMMY=2
 
@@ -81,7 +90,7 @@ withdrawToken() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="withdrawToken" \
-    --arguments ${WITHDRAW_SUPPLY} "str:"${WITHDRAW_TOKEN}
+    --arguments ${WITHDRAW_SUPPLY_1} "str:"${WITHDRAW_TOKEN_1}
 }  
 
 ########
@@ -96,10 +105,10 @@ subscribeToMultipleServices() {
     --proxy=${PROXY} \
     --chain=${CHAIN_ID} \
     --recall-nonce \
-    --pem="subscription/wallets/tony.pem" \
+    --pem="subscription/wallets/bob.pem" \
     --gas-limit=100000000 \
     --function="subscribeToMultipleServices" \
-    --arguments $SERVICE_1 $SERVICE_3  
+    --arguments $SERVICE_2  $SERVICE_3    
 }  
 
 unsubscribeFromMultipleServices() {
@@ -211,7 +220,7 @@ getIds() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getIds" \
-    --arguments "str:"${DEPOSIT_TOKEN} 
+    --arguments "str:"${DEPOSIT_TOKEN_1} 
 }
 
 getBalance() {

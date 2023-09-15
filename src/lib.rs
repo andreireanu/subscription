@@ -113,7 +113,7 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
             "The caller has no balance for this token"
         );
         let mut balance = self.balance(&caller).get(&id).unwrap();
-        require!(balance >= supply, "Token balance lower than requested one");
+        require!(balance >= supply, "Token balance lower than requested for withdrawal");
 
         let _ = self.send().direct_esdt(&caller, &token, 0u64, &supply);
         balance -= supply;
@@ -133,7 +133,11 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         let caller = self.blockchain().get_caller();
         let service = self.subscription(service_id).get(&caller);
         match service {
-            Some(_) => sc_panic!("Already subscribed to this service."),
+            Some(_) =>  {
+                // Normally should panic but in the context of subscription to 
+                // multiple services if already subscribed we pass
+                // sc_panic!("Already subscribed to this service.");
+             },
             None => {
                 let timestamp = self.blockchain().get_block_timestamp();
                 let periodicity = self.services(service_id).get().periodicity;
@@ -159,9 +163,11 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         let caller = self.blockchain().get_caller();
         let service = self.subscription(service_id).get(&caller);
         match service {
-            Some(_) => self.subscription(service_id).remove(&caller),
+            Some(_) => { self.subscription(service_id).remove(&caller); },
             None => {
-                sc_panic!("Not subscribed to this service.")
+                // Normally should panic but in the context of unsubscription to 
+                // multiple services if already unsubscribed we pass
+                // sc_panic!("Not subscribed to this service.")
             }
         };
     }
