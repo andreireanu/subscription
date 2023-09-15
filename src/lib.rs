@@ -6,12 +6,12 @@ multiversx_sc::derive_imports!();
 mod storage;
 use storage::Service;
 
-mod callee_proxy {
+mod netflix_proxy {
     multiversx_sc::imports!();
     use crate::storage::Service;
 
     #[multiversx_sc::proxy]
-    pub trait CalleeContract {
+    pub trait NetflixContract {
         #[view(getTokensCount)]
         fn tokens_count(&self) -> SingleValueMapper<usize>;
 
@@ -32,46 +32,72 @@ mod callee_proxy {
     }
 }
 
+mod safe_price_view_proxy {
+    multiversx_sc::imports!();
+
+    #[multiversx_sc::proxy]
+    pub trait SafePriceViewContract {
+        #[view(getSafePriceByDefaultOffset)]
+        fn get_safe_price_by_default_offset(
+            &self,
+            pair_address: ManagedAddress,
+            input_payment: EsdtTokenPayment,
+        ) -> EsdtTokenPayment;
+    }
+}
+
+
 #[multiversx_sc::contract]
 pub trait SubscriptionContract: crate::storage::StorageModule {
     #[proxy]
-    fn contract_proxy(&self, sc_address: ManagedAddress) -> callee_proxy::Proxy<Self::Api>;
+    fn netflix_contract_proxy(&self, sc_address: ManagedAddress)
+        -> netflix_proxy::Proxy<Self::Api>;
+
+    #[proxy]
+    fn safe_price_view_contract_proxy(
+        &self,
+        sc_address: ManagedAddress,
+    ) -> safe_price_view_proxy::Proxy<Self::Api>;
+
+    
+        
+    
 
     #[init]
     fn init(&self, netflix_address: ManagedAddress) {
         self.netflix().set(netflix_address);
         let tokens_count: usize = self
-            .contract_proxy(self.netflix().get())
+            .netflix_contract_proxy(self.netflix().get())
             .tokens_count()
             .execute_on_dest_context();
         self.tokens_count().set(tokens_count);
         for idx in 1..tokens_count {
             let token: TokenIdentifier = self
-                .contract_proxy(self.netflix().get())
+                .netflix_contract_proxy(self.netflix().get())
                 .tokens(&idx)
                 .execute_on_dest_context();
             self.id(&token).set(&idx);
             self.tokens(&idx).set(&token);
             let lp_address: ManagedAddress = self
-                .contract_proxy(self.netflix().get())
+                .netflix_contract_proxy(self.netflix().get())
                 .lp_address(&idx)
                 .execute_on_dest_context();
             self.lp_address(&idx).set(lp_address);
         }
         let services_count: usize = self
-            .contract_proxy(self.netflix().get())
+            .netflix_contract_proxy(self.netflix().get())
             .services_count()
             .execute_on_dest_context();
         self.services_count().set(services_count);
         for idx in 1..services_count {
             let service: Service = self
-                .contract_proxy(self.netflix().get())
+                .netflix_contract_proxy(self.netflix().get())
                 .services(&idx)
                 .execute_on_dest_context();
             self.services(&idx).set(service);
         }
         let safe_price_view_address: ManagedAddress = self
-            .contract_proxy(self.netflix().get())
+            .netflix_contract_proxy(self.netflix().get())
             .safe_price_view()
             .execute_on_dest_context();
         self.safe_price_view().set(safe_price_view_address);
@@ -177,5 +203,31 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         for service in services {
             self.unsubscribe_from_single_service(&service);
         }
+    }
+
+    // Get token equivalent of 1$
+    #[endpoint(getTokenDollarValue)]
+    fn get_token_dollar_value(&self, token: TokenIdentifier, usdc: TokenIdentifier) -> BigUint {
+        let token_id = self.id(&token).get();
+        let lp_address = self.lp_address(&token_id).get();
+        let one_usdc_payment = EsdtTokenPayment::new(usdc, 0, BigUint::from(10u64.pow(18)));
+        let view_pair_address = self.safe_price_view().get();
+        // Call LP Safe Price View with 1$ as payment
+        let result: EsdtTokenPayment = self
+            .safe_price_view_contract_proxy(view_pair_address)
+            .get_safe_price_by_default_offset(lp_address, one_usdc_payment)
+            .execute_on_dest_context();
+        result.amount
+    }
+
+    #[endpoint(checkAvailableAmount)]
+    fn check_available_amount(&self, address: ManagedAddress, amount: BigUint) {}
+
+    #[endpoint(sendTokens)]
+    fn send_tokens(&self) {}
+
+    #[endpoint(clearDollarValue)]
+    fn clear_dollar_value(&self) {
+        self.dollar_value().set(BigUint::from(0u64));
     }
 }

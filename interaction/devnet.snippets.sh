@@ -203,12 +203,6 @@ getServices() {
     --arguments $SERVICE_3 
 }
 
-getSafePriceView() {
-    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
-    --proxy=${PROXY} \
-    --function="getSafePriceView"
-}
-
 
 getNetflix() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
@@ -216,17 +210,69 @@ getNetflix() {
     --function="getNetflix"
 }
 
-getIds() {
-    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
-    --proxy=${PROXY} \
-    --function="getIds" \
-    --arguments "str:"${DEPOSIT_TOKEN_1} 
-}
+
 
 getBalance() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getBalance" \
     --arguments ${ALICE_ADDRESS} 
+}
+
+getSafePriceView() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getSafePriceView"
+}
+
+LP_ID_1=1
+
+getPairCreatedAddress() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getLPAddress" \
+    --arguments ${LP_ID_1}
+}
+
+
+GET_TOKEN_1=AMS-3a6740
+GET_SUPPLY_1=20 
+USDC=USDC-79d9a4
+
+getIds() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getIds" \
+    --arguments "str:"${GET_TOKEN_1} 
+}
+
+
+getTokenDollarValue() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="subscription/wallets/bob.pem" \
+    --gas-limit=100000000 \
+    --function="getTokenDollarValue" \
+    --arguments "str:"${GET_TOKEN_1} ${GET_SUPPLY_1} "str:"${USDC}
+}  
+
+clearDollarValue() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="subscription/wallets/bob.pem" \
+    --gas-limit=100000000 \
+    --function="clearDollarValue"
+}  
+
+getDollarValue() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getDollarValue"
 }
 
