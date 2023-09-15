@@ -23,6 +23,12 @@ mod callee_proxy {
 
         #[view(getServices)]
         fn services(&self, id: &usize) -> SingleValueMapper<Service>;
+
+        #[view(getLPAddress)]
+        fn lp_address(&self, id: &usize) -> SingleValueMapper<ManagedAddress>;
+
+        #[view(getSafePriceView)]
+        fn safe_price_view(&self) -> SingleValueMapper<ManagedAddress>;
     }
 }
 
@@ -39,27 +45,38 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
             .tokens_count()
             .execute_on_dest_context();
         self.tokens_count().set(tokens_count);
-        for idx in 0..tokens_count {
+        for idx in 1..tokens_count {
             let token: TokenIdentifier = self
                 .contract_proxy(self.netflix().get())
-                .tokens(idx)
+                .tokens(&idx)
                 .execute_on_dest_context();
-            self.id(&token).set(idx);
-            self.tokens(&idx).set(token);
+            self.id(&token).set(&idx);
+            self.tokens(&idx).set(&token);
+            let lp_address: ManagedAddress = self
+                .contract_proxy(self.netflix().get())
+                .lp_address(&idx)
+                .execute_on_dest_context();
+            self.lp_address(&idx).set(lp_address);
         }
         let services_count: usize = self
             .contract_proxy(self.netflix().get())
             .services_count()
             .execute_on_dest_context();
         self.services_count().set(services_count);
-        for idx in 0..services_count {
+        for idx in 1..services_count {
             let service: Service = self
                 .contract_proxy(self.netflix().get())
-                .services(idx)
+                .services(&idx)
                 .execute_on_dest_context();
             self.services(&idx).set(service);
         }
+        let safe_price_view_address: ManagedAddress = self
+            .contract_proxy(self.netflix().get())
+            .safe_price_view()
+            .execute_on_dest_context();
+        self.safe_price_view().set(safe_price_view_address);
     }
+
 
     #[payable("*")]
     #[endpoint(depositToken)]

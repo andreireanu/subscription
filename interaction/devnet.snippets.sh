@@ -4,8 +4,7 @@ PROXY=https://devnet-gateway.multiversx.com
 CHAIN_ID="D"
 WALLET_ALICE="${PWD}/subscription/wallets/alice.pem"
 WALLET_BOB="${PWD}/subscription/wallets/bob.pem"
-# SC ADDRESS WITH LOCAL MINT:
-CONTRACT_ADDRESS="erd1qqqqqqqqqqqqqpgqtxj7x99yz4x97g0c3kdgf03stk2uvt807wpq8emhnq"
+CONTRACT_ADDRESS="erd1qqqqqqqqqqqqqpgq9d60a4wwgqrhsx8u2wfuvyp0d5e9py5q7wpqcp8j35"
 CONTRACT_ADDRESS_HEX="$(mxpy wallet bech32 --decode ${CONTRACT_ADDRESS})"
 ALICE_ADDRESS="erd1aqd2v3hsrpgpcscls6a6al35uc3vqjjmskj6vnvl0k93e73x7wpqtpctqw"
 ALICE_ADDRESS_HEX="$(mxpy wallet bech32 --decode ${ALICE_ADDRESS})"
@@ -61,7 +60,7 @@ depositToken() {
     --proxy=${PROXY} \
     --chain=${CHAIN_ID} \
     --recall-nonce \
-    --pem="erc1155/wallets/alice.pem" \
+    --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="ESDTTransfer" \
     --arguments "str:"${DEPOSIT_TOKEN} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY} "str:"${DEPOSIT_TOKEN}
@@ -79,7 +78,7 @@ withdrawToken() {
     --proxy=${PROXY} \
     --chain=${CHAIN_ID} \
     --recall-nonce \
-    --pem="erc1155/wallets/alice.pem" \
+    --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="withdrawToken" \
     --arguments ${WITHDRAW_SUPPLY} "str:"${WITHDRAW_TOKEN}
@@ -90,7 +89,6 @@ withdrawToken() {
 SERVICE_1=1
 SERVICE_2=2
 SERVICE_3=3
-SERVICE_4=4
 
 subscribeToMultipleServices() {
     mxpy --verbose contract call ${CONTRACT_ADDRESS} \
@@ -98,10 +96,10 @@ subscribeToMultipleServices() {
     --proxy=${PROXY} \
     --chain=${CHAIN_ID} \
     --recall-nonce \
-    --pem="erc1155/wallets/alice.pem" \
+    --pem="subscription/wallets/tony.pem" \
     --gas-limit=100000000 \
     --function="subscribeToMultipleServices" \
-    --arguments $SERVICE_1 $SERVICE_2 $SERVICE_3  
+    --arguments $SERVICE_1 $SERVICE_3  
 }  
 
 unsubscribeFromMultipleServices() {
@@ -110,7 +108,7 @@ unsubscribeFromMultipleServices() {
     --proxy=${PROXY} \
     --chain=${CHAIN_ID} \
     --recall-nonce \
-    --pem="erc1155/wallets/alice.pem" \
+    --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="unsubscribeFromMultipleServices" \
     --arguments $SERVICE_2 $SERVICE_3   
@@ -139,19 +137,40 @@ getTokensCount() {
     --function="getTokensCount"  
 } 
 
-TOKEN_1=1
-TOKEN_2=2
+TOKEN_ID_1=1
+TOKEN_ID_2=2
+TOKEN_ID_3=3
 
 getTokens() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getTokens" \
-    --arguments ${TOKEN_1} 
+    --arguments ${TOKEN_ID_1} 
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getTokens" \
-    --arguments ${TOKEN_2}
+    --arguments ${TOKEN_ID_2} 
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getTokens" \
+    --arguments ${TOKEN_ID_3} 
 }
+
+getAddresses() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getLPAddress" \
+    --arguments ${TOKEN_ID_1} 
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getLPAddress" \
+    --arguments ${TOKEN_ID_2} 
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getLPAddress" \
+    --arguments ${TOKEN_ID_3} 
+}
+
 
 getServicesCount() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
@@ -173,6 +192,19 @@ getServices() {
     --proxy=${PROXY} \
     --function="getServices" \
     --arguments $SERVICE_3 
+}
+
+getSafePriceView() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getSafePriceView"
+}
+
+
+getNetflix() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getNetflix"
 }
 
 getIds() {
