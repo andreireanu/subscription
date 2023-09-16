@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           18
+// Endpoints:                           22
 // Async Callback (empty):               1
-// Total number of exported functions:  20
+// Total number of exported functions:  24
 
 #![no_std]
 
@@ -26,8 +26,10 @@ multiversx_sc_wasm_adapter::endpoints! {
         withdrawToken => withdraw_token
         subscribeToMultipleServices => subscribe_to_multiple_services
         unsubscribeFromMultipleServices => unsubscribe_from_multiple_services
-        getTokenDollarValue => get_token_dollar_value
-        clearDollarValue => clear_dollar_value
+        getTokenPairValue => get_token_pair_value
+        calculateTokensPayment => calculate_tokens_payment
+        sendTokens => send_tokens
+        clearPairValue => clear_pair_value
         getNetflix => netflix
         getTokensCount => tokens_count
         getTokens => tokens
@@ -39,7 +41,9 @@ multiversx_sc_wasm_adapter::endpoints! {
         getSubscription => subscription
         getSafePriceView => safe_price_view
         getLastLPAddress => last_lp_address
-        getDollarValue => dollar_value
+        getPairValue => pair_value
+        getAmountOwned => amount_owned
+        getDollarEquivalent => dollar_equivalent
     )
 }
 

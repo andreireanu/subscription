@@ -4,6 +4,7 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 mod storage;
+use multiversx_sc::storage::StorageKey;
 use storage::Service;
 
 mod netflix_proxy {
@@ -22,7 +23,7 @@ mod netflix_proxy {
         fn services_count(&self) -> SingleValueMapper<usize>;
 
         #[view(getServices)]
-        fn services(&self, id: &usize) -> SingleValueMapper<Service>;
+        fn services(&self, id: &usize) -> SingleValueMapper<Service<Self::Api>>;
 
         #[view(getLPAddress)]
         fn lp_address(&self, id: &usize) -> SingleValueMapper<ManagedAddress>;
@@ -90,7 +91,7 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
             .execute_on_dest_context();
         self.services_count().set(services_count);
         for idx in 1..services_count {
-            let service: Service = self
+            let service: Service<Self::Api> = self
                 .netflix_contract_proxy(self.netflix().get())
                 .services(&idx)
                 .execute_on_dest_context();
@@ -166,9 +167,8 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
              },
             None => {
                 let timestamp = self.blockchain().get_block_timestamp();
-                let periodicity = self.services(service_id).get().periodicity;
                 self.subscription(service_id)
-                    .insert(caller, timestamp + periodicity);
+                    .insert(caller, timestamp);
             }
         };
     }
@@ -205,29 +205,86 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         }
     }
 
-    // Get token equivalent of 1$
-    #[endpoint(getTokenDollarValue)]
-    fn get_token_dollar_value(&self, token: TokenIdentifier, usdc: TokenIdentifier) -> BigUint {
-        let token_id = self.id(&token).get();
-        let lp_address = self.lp_address(&token_id).get();
-        let one_usdc_payment = EsdtTokenPayment::new(usdc, 0, BigUint::from(10u64.pow(18)));
+    // Get pair token equivalent
+    #[inline]
+    #[endpoint(getTokenPairValue)]
+    fn get_token_pair_value(
+        &self,
+        token: TokenIdentifier,
+        amount: BigUint,
+        lp_address: &ManagedAddress,
+    ) -> BigUint {
+        // let token_id = self.id(&token).get();
+        // let lp_address = self.lp_address(&token_id).get();
+        // let one_usdc_payment = EsdtTokenPayment::new(*usdc, 0, BigUint::from(10u64.pow(18)));
+        // let view_pair_address = self.safe_price_view().get();
+        // // Call LP Safe Price View with 1$ as payment
+        // let result: EsdtTokenPayment = self
+        //     .safe_price_view_contract_proxy(view_pair_address)
+        //     .get_safe_price_by_default_offset(lp_address, one_usdc_payment)
+        //     .execute_on_dest_context();
+        // result.amount
         let view_pair_address = self.safe_price_view().get();
-        // Call LP Safe Price View with 1$ as payment
+        let payment = EsdtTokenPayment::new(token, 0, amount);
         let result: EsdtTokenPayment = self
             .safe_price_view_contract_proxy(view_pair_address)
-            .get_safe_price_by_default_offset(lp_address, one_usdc_payment)
+            .get_safe_price_by_default_offset(lp_address, payment)
             .execute_on_dest_context();
         result.amount
     }
 
-    #[endpoint(checkAvailableAmount)]
-    fn check_available_amount(&self, address: ManagedAddress, amount: BigUint) {}
+    // Calculate tokens payment for an address that subscribed to a service
+    #[inline]
+    #[endpoint(calculateTokensPayment)]
+    fn calculate_tokens_payment(&self, service_id: usize, address: ManagedAddress, timestamp: u64) {
+        // service_id - The service id
+        // address    - The address that subscribed to the service
+        // timestamp  - Subscription time or last payment time
+        let current_timestamp = self.blockchain().get_block_timestamp();
+        let service = self.services(&service_id).get();
+        let amount_owned =
+            BigUint::from((current_timestamp - timestamp) / service.periodicity) * service.price;
+        self.amount_owned().set(&amount_owned);
+        // Cycle through owned tokens and check if payment is possible
+        let usdc_id = 3;
+        let usdc_token = self.tokens(&usdc_id).get();
+        let my_storage_key: StorageKey<_> = StorageKey::from("unorderded_storage_key");
+        let mut payment_vec: UnorderedSetMapper<EsdtTokenPayment> =
+            UnorderedSetMapper::new(my_storage_key);
+        // let mut amount_in_balance = BigUint::from(0u64);
+        for (token_id, balance) in self.balance(&address).iter() {
+            let lp_address = self.lp_address(&token_id).get();
+            let token: TokenIdentifier = self.tokens(&token_id).get();
+            let dollar_equivalent = self.get_token_pair_value(token.clone(), balance, &lp_address);
+            // if dollar_equivalent is greater than needed payment difference
+            // we get the exact amount needed for the difference
+            if amount_owned.clone() < dollar_equivalent {
+                // token_rest is the left amount in token needed to cover the payment difference
+                let amount_rest = self.get_token_pair_value(
+                    usdc_token.clone(),
+                    amount_owned.clone(),
+                    &lp_address,
+                );
+                // add last payment to paymentVec and break
+                payment_vec.insert(EsdtTokenPayment::new(token, 0, amount_rest));
+            }
+        }
+        // self.dollar_equivalent().set(amount_in_balance);
+    }
 
     #[endpoint(sendTokens)]
-    fn send_tokens(&self) {}
+    fn send_tokens(&self) {
+        // check all services
+        for idx in 1..2 {
+            // for each service check all subscriptions
+            for (address, timestamp) in self.subscription(&idx).iter() {
+                self.calculate_tokens_payment(idx, address, timestamp);
+            }
+        }
+    }
 
-    #[endpoint(clearDollarValue)]
-    fn clear_dollar_value(&self) {
-        self.dollar_value().set(BigUint::from(0u64));
+    #[endpoint(clearPairValue)]
+    fn clear_pair_value(&self) {
+        self.pair_value().set(BigUint::from(0u64));
     }
 }

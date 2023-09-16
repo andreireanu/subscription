@@ -3,9 +3,9 @@ multiversx_sc::derive_imports!();
 
 // CUSTOM FORMAT
 #[derive(PartialEq, TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode, Clone)]
-pub struct Service {
-    pub price: u16, // Price stored as a 2 decimal value so 3.25$ will be stored as 325
-    pub periodicity: u64, // Periodicity stored in seconds
+pub struct Service<M: ManagedTypeApi> {
+    pub price: BigUint<M>, // Price stored as a 2 decimal value so 3.25$ will be stored as 325
+    pub periodicity: u64,  // Periodicity stored in seconds
 }
 
 // STORAGE
@@ -46,7 +46,7 @@ pub trait StorageModule {
     // Id To Services mapper
     #[view(getServices)]
     #[storage_mapper("services")]
-    fn services(&self, id: &usize) -> SingleValueMapper<Service>;
+    fn services(&self, id: &usize) -> SingleValueMapper<Service<Self::Api>>;
 
     // Address to Balance mapper
     #[view(getBalance)]
@@ -70,8 +70,18 @@ pub trait StorageModule {
     #[storage_mapper("last_lp_address")]
     fn last_lp_address(&self) -> SingleValueMapper<ManagedAddress>;
 
-    // Store dollar value for last checked token amount
-    #[view(getDollarValue)]
-    #[storage_mapper("dollar_value")]
-    fn dollar_value(&self) -> SingleValueMapper<BigUint>;
+    // Store pair value for last checked token amount
+    #[view(getPairValue)]
+    #[storage_mapper("pair_value")]
+    fn pair_value(&self) -> SingleValueMapper<BigUint>;
+
+    // Store amount owned
+    #[view(getAmountOwned)]
+    #[storage_mapper("amount_owned")]
+    fn amount_owned(&self) -> SingleValueMapper<BigUint>;
+
+    // Store amount owned
+    #[view(getDollarEquivalent)]
+    #[storage_mapper("dollar_equivalent")]
+    fn dollar_equivalent(&self) -> SingleValueMapper<BigUint>;
 }

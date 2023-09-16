@@ -57,7 +57,7 @@ TOKEN_3=USDC-79d9a4
 
 DEPOSIT_FUNCTION=depositToken
 DEPOSIT_TOKEN_1=AMS-3a6740
-DEPOSIT_SUPPLY_1=20
+DEPOSIT_SUPPLY_1=380
 DEPOSIT_TOKEN_2=BMS-e00535
 DEPOSIT_SUPPLY_2=10
 DEPOSIT_TOKEN_DUMMY=BND2-90614b
@@ -72,14 +72,15 @@ depositToken() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="ESDTTransfer" \
-    --arguments "str:"${DEPOSIT_TOKEN_2} ${DEPOSIT_SUPPLY_2} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY_2} "str:"${DEPOSIT_TOKEN_2}
+    --arguments "str:"${DEPOSIT_TOKEN_1} ${DEPOSIT_SUPPLY_1} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY_1} "str:"${DEPOSIT_TOKEN_1}
 } 
 
 WITHDRAW_FUNCTION=withdrawToken
 WITHDRAW_TOKEN_1=AMS-3a6740
 WITHDRAW_SUPPLY_1=20
-WITHDRAW_TOKEN_DUMMY=BND2-90614b
-WITHDRAW_SUPPLY_DUMMY=2
+WITHDRAW_TOKEN_2=BMS-e00535
+WITHDRAW_SUPPLY_2=10
+ 
 
 withdrawToken() {
     mxpy --verbose contract call ${CONTRACT_ADDRESS} \
@@ -90,7 +91,7 @@ withdrawToken() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="withdrawToken" \
-    --arguments ${WITHDRAW_SUPPLY_1} "str:"${WITHDRAW_TOKEN_1}
+    --arguments ${WITHDRAW_SUPPLY_2} "str:"${WITHDRAW_TOKEN_2}
 }  
 
 ########
@@ -108,7 +109,7 @@ subscribeToMultipleServices() {
     --pem="subscription/wallets/bob.pem" \
     --gas-limit=100000000 \
     --function="subscribeToMultipleServices" \
-    --arguments $SERVICE_2  $SERVICE_3    
+    --arguments $SERVICE_2 $SERVICE_3    
 }  
 
 unsubscribeFromMultipleServices() {
@@ -120,7 +121,7 @@ unsubscribeFromMultipleServices() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="unsubscribeFromMultipleServices" \
-    --arguments $SERVICE_2 $SERVICE_3   
+    --arguments $SERVICE_1 $SERVICE_2     
 }  
 
 getSubscription() {
@@ -247,7 +248,7 @@ getIds() {
 }
 
 
-getTokenDollarValue() {
+getTokenPairValue() {
     mxpy --verbose contract call ${CONTRACT_ADDRESS} \
     --send \
     --proxy=${PROXY} \
@@ -255,11 +256,11 @@ getTokenDollarValue() {
     --recall-nonce \
     --pem="subscription/wallets/bob.pem" \
     --gas-limit=100000000 \
-    --function="getTokenDollarValue" \
+    --function="getTokenPairValue" \
     --arguments "str:"${GET_TOKEN_1} ${GET_SUPPLY_1} "str:"${USDC}
 }  
 
-clearDollarValue() {
+clearPairValue() {
     mxpy --verbose contract call ${CONTRACT_ADDRESS} \
     --send \
     --proxy=${PROXY} \
@@ -267,12 +268,35 @@ clearDollarValue() {
     --recall-nonce \
     --pem="subscription/wallets/bob.pem" \
     --gas-limit=100000000 \
-    --function="clearDollarValue"
+    --function="clearPairValue"
 }  
 
-getDollarValue() {
+getPairValue() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
-    --function="getDollarValue"
+    --function="getPairValue"
 }
 
+sendTokens() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="subscription/wallets/alice.pem" \
+    --gas-limit=100000000 \
+    --function="sendTokens"
+}  
+
+
+getAmountOwned() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getAmountOwned"
+}
+
+getDollarEquivalent() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getDollarEquivalent"
+}
