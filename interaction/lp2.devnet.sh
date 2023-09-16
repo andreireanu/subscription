@@ -14,11 +14,22 @@ MARTA_ADDRESS="erd1uycnjd0epww6xrmn0xjdkfhjengpaf4l5866rlrd8qpcsamrqr8qs6ucxx"
 MARTA_ADDRESS_HEX="$(mxpy wallet bech32 --decode ${MARTA_ADDRESS})"
 MARTA_ADDRESS_HEXX="0x$(mxpy wallet bech32 --decode ${MARTA_ADDRESS})"
 
-ROUTER_ADDRESS="erd1qqqqqqqqqqqqqpgq8w0p5gz4ccszzqh8jgula0dfuhqjzvjf7wpqvp03u9"
-PAIR_SMART_CONTRACT="erd1qqqqqqqqqqqqqpgq4933xdfh8asw0mdru209sr5652s85jzh7wpq3smlnd"
-PAIR_CREATED_ADDRESS="erd1qqqqqqqqqqqqqpgqe92zyh296kxrmeszg5cynxcuj4vzckxg7wpqp89fmz"
-SAFE_PRICE_VIEW="erd1qqqqqqqqqqqqqpgqs5t29sk6v0knxxnnc29pv6y0zgmemh287wpqmcx970"
+# INTIAL PARITY FOR BMS-e00535 Token
+# ROUTER_ADDRESS="erd1qqqqqqqqqqqqqpgq8w0p5gz4ccszzqh8jgula0dfuhqjzvjf7wpqvp03u9"
+# PAIR_SMART_CONTRACT="erd1qqqqqqqqqqqqqpgq4933xdfh8asw0mdru209sr5652s85jzh7wpq3smlnd"
+# PAIR_CREATED_ADDRESS="erd1qqqqqqqqqqqqqpgqe92zyh296kxrmeszg5cynxcuj4vzckxg7wpqp89fmz"
+# SAFE_PRICE_VIEW="erd1qqqqqqqqqqqqqpgqs5t29sk6v0knxxnnc29pv6y0zgmemh287wpqmcx970"
  
+# ALTERNATIVE USDC PARITY CONTRACTS FOR BMS-e00535 Token 
+ROUTER_ADDRESS="erd1qqqqqqqqqqqqqpgqqste83a68ukj24sm5xvhasmzkzzyg5sg7wpqfec4j6"
+PAIR_SMART_CONTRACT="erd1qqqqqqqqqqqqqpgq7ww3ajg24xt9vw9w8nee7ta2ytkzqqd07wpqf8kz6w"
+PAIR_CREATED_ADDRESS="erd1qqqqqqqqqqqqqpgqzcewpeqhlk28ke2fguwqgjnvkkdv4h027wpqduupj3"
+SAFE_PRICE_VIEW="erd1qqqqqqqqqqqqqpgqs5t29sk6v0knxxnnc29pv6y0zgmemh287wpqmcx970"
+
+ 
+
+
+
 ### MAIN
 
 #### ROUTER ####
@@ -28,7 +39,7 @@ deployRouterContract() {
           --pem="${PWD}/wallets/alice.pem" \
           --gas-limit=600000000 \
           --proxy=${PROXY} --chain=${CHAIN_ID} \
-          --bytecode="${PWD}/router/output/router.wasm" \
+          --bytecode="${PWD}/mx-exchange-sc/dex/router/output/router.wasm" \
           --outfile="deploy-route-internal.interaction.json" --send || return
     
     ADDRESS=$(mxpy data parse --file="deploy-route-internal.interaction.json" --expression="data['contractAddress']")
@@ -55,7 +66,7 @@ deployPairContract() {
           --gas-limit=600000000 \
           --metadata-payable \
           --proxy=${PROXY} --chain=${CHAIN_ID} \
-          --bytecode="${PWD}/pair/output/pair.wasm" \
+          --bytecode="${PWD}/mx-exchange-sc/dex/pair/output/pair.wasm" \
           --arguments "str:"$TOKEN_1 "str:"$TOKEN_2 ${ROUTER_ADDRESS} ${ALICE_ADDRESS} 0x000000000000012C 0x0000000000000032 ${ALICE_ADDRESS} ${ALICE_ADDRESS} \
           --outfile="deploy-pair-internal.interaction.json" --send || return
     
@@ -73,7 +84,7 @@ upgrade() {
           --pem="${PWD}/wallets/alice.pem" \
           --gas-limit=600000000 \
           --proxy=${PROXY} --chain=${CHAIN_ID} \
-          --bytecode="${PWD}/router/output/router.wasm" \
+          --bytecode="${PWD}/mx-exchange-sc/dex/router/output/router.wasm" \
           --arguments ${PAIR_SMART_CONTRACT} \
           --send || return
 }
@@ -83,8 +94,8 @@ upgrade() {
 
 NONCE=0
 NO_OF_TOKENS=2
-AMOUNT_TOKEN_1=98
-AMOUNT_TOKEN_2=49
+AMOUNT_TOKEN_1=500
+AMOUNT_TOKEN_2=5
 DECIMALS_TOKEN_2=18
 POWER_TOKEN_2=$((10**${DECIMALS_TOKEN_2}))
 AMOUNT_TOKEN_2_POWERED=$( printf "%.0f" $(echo "${AMOUNT_TOKEN_2} * ${POWER_TOKEN_2}" | bc) ) 

@@ -40,7 +40,7 @@ upgrade() {
     --proxy=${PROXY} \
     --recall-nonce \
     --bytecode=subscription/output/subscription.wasm \
-    --gas-limit=80000000 \
+    --gas-limit=100000000 \
     --send \
     --metadata-payable \
     --arguments ${NETFLIX_ADDRESS}
@@ -49,17 +49,15 @@ upgrade() {
 ########
 
 TOKEN_1=AMS-3a6740
-LP_ADDRESS_TOKEN_1="erd1qqqqqqqqqqqqqpgqfs5vg9n23hvrgfmye4h9vj8p6ljtz2m37wpqj726a5"
 TOKEN_2=BMS-e00535
-LP_ADDRESS_TOKEN_2="erd1qqqqqqqqqqqqqpgqe92zyh296kxrmeszg5cynxcuj4vzckxg7wpqp89fmz"
 TOKEN_3=USDC-79d9a4
 
 
 DEPOSIT_FUNCTION=depositToken
 DEPOSIT_TOKEN_1=AMS-3a6740
-DEPOSIT_SUPPLY_1=380
+DEPOSIT_SUPPLY_1=100
 DEPOSIT_TOKEN_2=BMS-e00535
-DEPOSIT_SUPPLY_2=10
+DEPOSIT_SUPPLY_2=200
 DEPOSIT_TOKEN_DUMMY=BND2-90614b
 DEPOSIT_SUPPLY_DUMMY=2
  
@@ -72,14 +70,14 @@ depositToken() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="ESDTTransfer" \
-    --arguments "str:"${DEPOSIT_TOKEN_1} ${DEPOSIT_SUPPLY_1} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY_1} "str:"${DEPOSIT_TOKEN_1}
+    --arguments "str:"${DEPOSIT_TOKEN_2} ${DEPOSIT_SUPPLY_2} "str:"${DEPOSIT_FUNCTION} ${DEPOSIT_SUPPLY_2} "str:"${DEPOSIT_TOKEN_2}
 } 
 
 WITHDRAW_FUNCTION=withdrawToken
 WITHDRAW_TOKEN_1=AMS-3a6740
-WITHDRAW_SUPPLY_1=20
+WITHDRAW_SUPPLY_1=100
 WITHDRAW_TOKEN_2=BMS-e00535
-WITHDRAW_SUPPLY_2=10
+WITHDRAW_SUPPLY_2=100
  
 
 withdrawToken() {
@@ -91,7 +89,7 @@ withdrawToken() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="withdrawToken" \
-    --arguments ${WITHDRAW_SUPPLY_2} "str:"${WITHDRAW_TOKEN_2}
+    --arguments ${WITHDRAW_SUPPLY_2} "str:"${WITHDRAW_TOKEN_2} ${ALICE_ADDRESS} ${ALICE_ADDRESS}
 }  
 
 ########
@@ -141,11 +139,27 @@ getSubscription() {
 
 ########
 
+
+sendTokens() {
+    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
+    --send \
+    --proxy=${PROXY} \
+    --chain=${CHAIN_ID} \
+    --recall-nonce \
+    --pem="subscription/wallets/alice.pem" \
+    --gas-limit=100000000 \
+    --function="sendTokens"
+}  
+
+
+########
+
 getTokensCount() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getTokensCount"  
 } 
+
 
 TOKEN_ID_1=1
 TOKEN_ID_2=2
@@ -248,36 +262,14 @@ getIds() {
 }
 
 
-getTokenPairValue() {
-    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
-    --send \
-    --proxy=${PROXY} \
-    --chain=${CHAIN_ID} \
-    --recall-nonce \
-    --pem="subscription/wallets/bob.pem" \
-    --gas-limit=100000000 \
-    --function="getTokenPairValue" \
-    --arguments "str:"${GET_TOKEN_1} ${GET_SUPPLY_1} "str:"${USDC}
-}  
-
-clearPairValue() {
-    mxpy --verbose contract call ${CONTRACT_ADDRESS} \
-    --send \
-    --proxy=${PROXY} \
-    --chain=${CHAIN_ID} \
-    --recall-nonce \
-    --pem="subscription/wallets/bob.pem" \
-    --gas-limit=100000000 \
-    --function="clearPairValue"
-}  
-
-getPairValue() {
+ getLastPaymentVec() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
-    --function="getPairValue"
+    --function="getLastPaymentVec"
 }
-
-sendTokens() {
+  
+ 
+clearLastVec() {
     mxpy --verbose contract call ${CONTRACT_ADDRESS} \
     --send \
     --proxy=${PROXY} \
@@ -285,18 +277,17 @@ sendTokens() {
     --recall-nonce \
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
-    --function="sendTokens"
+    --function="clearLastVec"
 }  
-
-
-getAmountOwned() {
-    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
-    --proxy=${PROXY} \
-    --function="getAmountOwned"
-}
 
 getDollarEquivalent() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getDollarEquivalent"
+}
+
+getDollarEquivalent2() {
+    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
+    --proxy=${PROXY} \
+    --function="getDollarEquivalent2"
 }

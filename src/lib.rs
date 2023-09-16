@@ -30,6 +30,9 @@ mod netflix_proxy {
 
         #[view(getSafePriceView)]
         fn safe_price_view(&self) -> SingleValueMapper<ManagedAddress>;
+
+        #[endpoint(setSubscriptionAddress)]
+        fn set_subscription_address(&self);
     }
 }
 
@@ -59,10 +62,6 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         &self,
         sc_address: ManagedAddress,
     ) -> safe_price_view_proxy::Proxy<Self::Api>;
-
-    
-        
-    
 
     #[init]
     fn init(&self, netflix_address: ManagedAddress) {
@@ -102,8 +101,11 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
             .safe_price_view()
             .execute_on_dest_context();
         self.safe_price_view().set(safe_price_view_address);
+        let _: IgnoreValue = self
+            .netflix_contract_proxy(self.netflix().get())
+            .set_subscription_address()
+            .execute_on_dest_context();
     }
-
 
     #[payable("*")]
     #[endpoint(depositToken)]
@@ -128,26 +130,35 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         };
     }
 
+    #[inline]
     #[endpoint(withdrawToken)]
-    fn withdraw_token(&self, supply: BigUint, token: TokenIdentifier) {
+    fn withdraw_token(
+        &self,
+        supply: &BigUint,
+        token: &TokenIdentifier,
+        from: &ManagedAddress,
+        to: &ManagedAddress,
+    ) {
         // Check if withdraw call valid
         let id = self.id(&token);
         require!(!id.is_empty(), "Token non existent in Smart Contract");
         let id = id.get();
-        let caller = self.blockchain().get_caller();
         require!(
-            self.balance(&caller).contains_key(&id),
+            self.balance(&from).contains_key(&id),
             "The caller has no balance for this token"
         );
-        let mut balance = self.balance(&caller).get(&id).unwrap();
-        require!(balance >= supply, "Token balance lower than requested for withdrawal");
+        let mut balance = self.balance(&from).get(&id).unwrap();
+        require!(
+            balance >= *supply,
+            "Token balance lower than requested for withdrawal"
+        );
 
-        let _ = self.send().direct_esdt(&caller, &token, 0u64, &supply);
+        self.send().direct_esdt(&to, &token, 0u64, &supply);
         balance -= supply;
         if balance == 0 {
-            self.balance(&caller).remove(&id);
+            self.balance(&from).remove(&id);
         } else {
-            self.balance(&caller).insert(id, balance);
+            self.balance(&from).insert(id, balance);
         }
     }
 
@@ -160,15 +171,14 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         let caller = self.blockchain().get_caller();
         let service = self.subscription(service_id).get(&caller);
         match service {
-            Some(_) =>  {
-                // Normally should panic but in the context of subscription to 
+            Some(_) => {
+                // Normally should panic but in the context of subscription to
                 // multiple services if already subscribed we pass
                 // sc_panic!("Already subscribed to this service.");
-             },
+            }
             None => {
                 let timestamp = self.blockchain().get_block_timestamp();
-                self.subscription(service_id)
-                    .insert(caller, timestamp);
+                self.subscription(service_id).insert(caller, timestamp);
             }
         };
     }
@@ -189,9 +199,11 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         let caller = self.blockchain().get_caller();
         let service = self.subscription(service_id).get(&caller);
         match service {
-            Some(_) => { self.subscription(service_id).remove(&caller); },
+            Some(_) => {
+                self.subscription(service_id).remove(&caller);
+            }
             None => {
-                // Normally should panic but in the context of unsubscription to 
+                // Normally should panic but in the context of unsubscription to
                 // multiple services if already unsubscribed we pass
                 // sc_panic!("Not subscribed to this service.")
             }
@@ -214,16 +226,6 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         amount: BigUint,
         lp_address: &ManagedAddress,
     ) -> BigUint {
-        // let token_id = self.id(&token).get();
-        // let lp_address = self.lp_address(&token_id).get();
-        // let one_usdc_payment = EsdtTokenPayment::new(*usdc, 0, BigUint::from(10u64.pow(18)));
-        // let view_pair_address = self.safe_price_view().get();
-        // // Call LP Safe Price View with 1$ as payment
-        // let result: EsdtTokenPayment = self
-        //     .safe_price_view_contract_proxy(view_pair_address)
-        //     .get_safe_price_by_default_offset(lp_address, one_usdc_payment)
-        //     .execute_on_dest_context();
-        // result.amount
         let view_pair_address = self.safe_price_view().get();
         let payment = EsdtTokenPayment::new(token, 0, amount);
         let result: EsdtTokenPayment = self
@@ -233,31 +235,48 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         result.amount
     }
 
+    #[inline]
+    fn send_subscription_tokens(
+        &self,
+        payment_vec: UnorderedSetMapper<EsdtTokenPayment>,
+        address: ManagedAddress,
+    ) {
+        let netflix = self.netflix().get();
+        for payment in payment_vec.iter() {
+            self.withdraw_token(
+                &payment.amount,
+                &payment.token_identifier,
+                &address,
+                &netflix,
+            )
+        }
+    }
+
     // Calculate tokens payment for an address that subscribed to a service
     #[inline]
-    #[endpoint(calculateTokensPayment)]
     fn calculate_tokens_payment(&self, service_id: usize, address: ManagedAddress, timestamp: u64) {
         // service_id - The service id
         // address    - The address that subscribed to the service
         // timestamp  - Subscription time or last payment time
         let current_timestamp = self.blockchain().get_block_timestamp();
         let service = self.services(&service_id).get();
-        let amount_owned =
+        let mut amount_owned =
             BigUint::from((current_timestamp - timestamp) / service.periodicity) * service.price;
-        self.amount_owned().set(&amount_owned);
         // Cycle through owned tokens and check if payment is possible
+        // This can either be sequential or a greedy algorithm
         let usdc_id = 3;
         let usdc_token = self.tokens(&usdc_id).get();
         let my_storage_key: StorageKey<_> = StorageKey::from("unorderded_storage_key");
         let mut payment_vec: UnorderedSetMapper<EsdtTokenPayment> =
             UnorderedSetMapper::new(my_storage_key);
-        // let mut amount_in_balance = BigUint::from(0u64);
+        payment_vec.clear();
         for (token_id, balance) in self.balance(&address).iter() {
             let lp_address = self.lp_address(&token_id).get();
             let token: TokenIdentifier = self.tokens(&token_id).get();
-            let dollar_equivalent = self.get_token_pair_value(token.clone(), balance, &lp_address);
+            let dollar_equivalent =
+                self.get_token_pair_value(token.clone(), balance.clone(), &lp_address);
             // if dollar_equivalent is greater than needed payment difference
-            // we get the exact amount needed for the difference
+            // we get the exact amount needed for the difference and break
             if amount_owned.clone() < dollar_equivalent {
                 // token_rest is the left amount in token needed to cover the payment difference
                 let amount_rest = self.get_token_pair_value(
@@ -265,17 +284,33 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
                     amount_owned.clone(),
                     &lp_address,
                 );
-                // add last payment to paymentVec and break
-                payment_vec.insert(EsdtTokenPayment::new(token, 0, amount_rest));
+                // add last payment to payment_vec and break
+                payment_vec.insert(EsdtTokenPayment::new(
+                    token,
+                    0,
+                    amount_rest,
+                ));
+                amount_owned = BigUint::from(0u64);
+                break;
+            } else {
+                // if dollar equivalet is lower than needed payment difference
+                // we get that amount and move on to the next token
+                payment_vec.insert(EsdtTokenPayment::new(token, 0, balance.clone()));
+                amount_owned -= dollar_equivalent;
             }
         }
-        // self.dollar_equivalent().set(amount_in_balance);
+        // if amount owned equals 0 we have the token payment information
+        // to make a valid payment to Netflix Smart Contract
+        // else address can't pay the subscription so we move to the next one
+        if amount_owned == 0 {
+            self.send_subscription_tokens(payment_vec, address);
+        }
     }
 
     #[endpoint(sendTokens)]
     fn send_tokens(&self) {
         // check all services
-        for idx in 1..2 {
+        for idx in 1..self.services_count().get() {
             // for each service check all subscriptions
             for (address, timestamp) in self.subscription(&idx).iter() {
                 self.calculate_tokens_payment(idx, address, timestamp);
@@ -283,8 +318,8 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         }
     }
 
-    #[endpoint(clearPairValue)]
-    fn clear_pair_value(&self) {
-        self.pair_value().set(BigUint::from(0u64));
+    #[endpoint(clearLastVec)]
+    fn clear_last_vec(&self) {
+        self.last_payment_vec().clear();
     }
 }

@@ -65,23 +65,7 @@ pub trait StorageModule {
     fn safe_price_view(&self) -> SingleValueMapper<ManagedAddress>;
 
     // DEV TEMP STORAGE
-    // Store last checked LP address
-    #[view(getLastLPAddress)]
-    #[storage_mapper("last_lp_address")]
-    fn last_lp_address(&self) -> SingleValueMapper<ManagedAddress>;
-
-    // Store pair value for last checked token amount
-    #[view(getPairValue)]
-    #[storage_mapper("pair_value")]
-    fn pair_value(&self) -> SingleValueMapper<BigUint>;
-
-    // Store amount owned
-    #[view(getAmountOwned)]
-    #[storage_mapper("amount_owned")]
-    fn amount_owned(&self) -> SingleValueMapper<BigUint>;
-
-    // Store amount owned
-    #[view(getDollarEquivalent)]
-    #[storage_mapper("dollar_equivalent")]
-    fn dollar_equivalent(&self) -> SingleValueMapper<BigUint>;
+    #[view(getLastPaymentVec)]
+    #[storage_mapper("last_payment_vec")]
+    fn last_payment_vec(&self) -> UnorderedSetMapper<EsdtTokenPayment>;
 }
