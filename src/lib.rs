@@ -217,7 +217,6 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         }
     }
 
-    // Get pair token equivalent
     #[inline]
     #[endpoint(getTokenPairValue)]
     fn get_token_pair_value(
@@ -236,10 +235,25 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
     }
 
     #[inline]
-    fn send_subscription_tokens(
+    fn update_subscription_timestamp(
+        &self,
+        service_id: &usize,
+        address: ManagedAddress,
+        payments_count: u64,
+    ) {
+        let current_timestamp = self.subscription(&service_id).get(&address).unwrap();
+        let periodicity = self.services(&service_id).get().periodicity;
+        self.subscription(service_id)
+            .insert(address, current_timestamp + payments_count * periodicity);
+    }
+
+    #[inline]
+    fn send_subscription_tokens_and_update_timestamp(
         &self,
         payment_vec: UnorderedSetMapper<EsdtTokenPayment>,
         address: ManagedAddress,
+        service_id: usize,
+        payments_count: u64,
     ) {
         let netflix = self.netflix().get();
         for payment in payment_vec.iter() {
@@ -250,6 +264,8 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
                 &netflix,
             )
         }
+        // Update timestamp to reflect payment
+        self.update_subscription_timestamp(&service_id, address, payments_count);
     }
 
     // Calculate tokens payment for an address that subscribed to a service
@@ -260,8 +276,9 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         // timestamp  - Subscription time or last payment time
         let current_timestamp = self.blockchain().get_block_timestamp();
         let service = self.services(&service_id).get();
+        let payments_count = (current_timestamp - timestamp) / service.periodicity;
         let mut amount_owned =
-            BigUint::from((current_timestamp - timestamp) / service.periodicity) * service.price;
+            BigUint::from(payments_count) * service.price;
         // Cycle through owned tokens and check if payment is possible
         // This can either be sequential or a greedy algorithm
         let usdc_id = 3;
@@ -293,7 +310,7 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
                 amount_owned = BigUint::from(0u64);
                 break;
             } else {
-                // if dollar equivalet is lower than needed payment difference
+                // if dollar equivalent is lower than needed payment difference
                 // we get that amount and move on to the next token
                 payment_vec.insert(EsdtTokenPayment::new(token, 0, balance.clone()));
                 amount_owned -= dollar_equivalent;
@@ -303,23 +320,23 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         // to make a valid payment to Netflix Smart Contract
         // else address can't pay the subscription so we move to the next one
         if amount_owned == 0 {
-            self.send_subscription_tokens(payment_vec, address);
+            self.send_subscription_tokens_and_update_timestamp(payment_vec, address, service_id, payments_count);
         }
     }
 
     #[endpoint(sendTokens)]
     fn send_tokens(&self) {
         // check all services
+        let caller = self.blockchain().get_caller();
+        require!(
+            caller == self.netflix().get(),
+            "Only Netflix contract can call this endpoint"
+        );
         for idx in 1..self.services_count().get() {
             // for each service check all subscriptions
             for (address, timestamp) in self.subscription(&idx).iter() {
                 self.calculate_tokens_payment(idx, address, timestamp);
             }
         }
-    }
-
-    #[endpoint(clearLastVec)]
-    fn clear_last_vec(&self) {
-        self.last_payment_vec().clear();
     }
 }

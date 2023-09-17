@@ -63,9 +63,4 @@ pub trait StorageModule {
     #[view(getSafePriceView)]
     #[storage_mapper("safe_price_view")]
     fn safe_price_view(&self) -> SingleValueMapper<ManagedAddress>;
-
-    // DEV TEMP STORAGE
-    #[view(getLastPaymentVec)]
-    #[storage_mapper("last_payment_vec")]
-    fn last_payment_vec(&self) -> UnorderedSetMapper<EsdtTokenPayment>;
 }

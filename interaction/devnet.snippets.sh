@@ -57,7 +57,7 @@ DEPOSIT_FUNCTION=depositToken
 DEPOSIT_TOKEN_1=AMS-3a6740
 DEPOSIT_SUPPLY_1=100
 DEPOSIT_TOKEN_2=BMS-e00535
-DEPOSIT_SUPPLY_2=200
+DEPOSIT_SUPPLY_2=280
 DEPOSIT_TOKEN_DUMMY=BND2-90614b
 DEPOSIT_SUPPLY_DUMMY=2
  
@@ -262,7 +262,7 @@ getIds() {
 }
 
 
- getLastPaymentVec() {
+getLastPaymentVec() {
     mxpy --verbose contract query ${CONTRACT_ADDRESS} \
     --proxy=${PROXY} \
     --function="getLastPaymentVec"
@@ -280,14 +280,4 @@ clearLastVec() {
     --function="clearLastVec"
 }  
 
-getDollarEquivalent() {
-    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
-    --proxy=${PROXY} \
-    --function="getDollarEquivalent"
-}
-
-getDollarEquivalent2() {
-    mxpy --verbose contract query ${CONTRACT_ADDRESS} \
-    --proxy=${PROXY} \
-    --function="getDollarEquivalent2"
-}
+  
