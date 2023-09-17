@@ -277,8 +277,11 @@ pub trait SubscriptionContract: crate::storage::StorageModule {
         let current_timestamp = self.blockchain().get_block_timestamp();
         let service = self.services(&service_id).get();
         let payments_count = (current_timestamp - timestamp) / service.periodicity;
-        let mut amount_owned =
-            BigUint::from(payments_count) * service.price;
+        let mut amount_owned = BigUint::from(payments_count) * service.price;
+        if amount_owned == 0 {
+            // No money is owned at the moment
+            return;
+        }
         // Cycle through owned tokens and check if payment is possible
         // This can either be sequential or a greedy algorithm
         let usdc_id = 3;

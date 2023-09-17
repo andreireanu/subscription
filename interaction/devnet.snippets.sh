@@ -104,10 +104,10 @@ subscribeToMultipleServices() {
     --proxy=${PROXY} \
     --chain=${CHAIN_ID} \
     --recall-nonce \
-    --pem="subscription/wallets/bob.pem" \
+    --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="subscribeToMultipleServices" \
-    --arguments $SERVICE_2 $SERVICE_3    
+    --arguments $SERVICE_1     
 }  
 
 unsubscribeFromMultipleServices() {
@@ -119,7 +119,7 @@ unsubscribeFromMultipleServices() {
     --pem="subscription/wallets/alice.pem" \
     --gas-limit=100000000 \
     --function="unsubscribeFromMultipleServices" \
-    --arguments $SERVICE_1 $SERVICE_2     
+    --arguments $SERVICE_1      
 }  
 
 getSubscription() {
